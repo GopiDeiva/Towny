@@ -21,13 +21,11 @@ import hatchure.towny.Helpers.Utils;
 import hatchure.towny.Interfaces.ApiInterface;
 import hatchure.towny.Models.OTPResponse;
 import hatchure.towny.WebHandler.WebRequesthandler;
-import okhttp3.internal.Util;
 import retrofit2.Call;
 import retrofit2.Callback;
 
 import static hatchure.towny.Helpers.Utils.IsNetworkAvailable;
 import static hatchure.towny.Helpers.Utils.MyPREFERENCES;
-import static hatchure.towny.Helpers.Utils.PhoneNumber;
 
 public class Entry extends Activity {
 
@@ -37,29 +35,18 @@ public class Entry extends Activity {
         setContentView(R.layout.activity_entry);
         SharedPreferences sharedpreferences = getSharedPreferences(MyPREFERENCES, Context.MODE_PRIVATE);
         String phoneNo = sharedpreferences.getString(Utils.PhoneNumber, "");
-        if (!phoneNo.equals(""))
-        {
-            if (!IsNetworkAvailable(this) )
-            {
-                Toast.makeText(getApplicationContext(), "Something went wrong. Please check your internet connection.", Toast.LENGTH_LONG).show();
-            }
-            else
-                {
+        if (!phoneNo.equals("")) {
+            if (IsNetworkAvailable(this)) {
                 Intent move = new Intent(getApplicationContext(), Home.class);
                 startActivity(move);
             }
-        } else
-            {
+        } else {
             final EditText phoneNumber = findViewById(R.id.phone_number);
             Button butt = findViewById(R.id.get_otp);
             butt.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if (!IsNetworkAvailable(Entry.this))
-                    {
-                        Toast.makeText(getApplicationContext(), "Somewthing went wrong. Please check your internet connection.", Toast.LENGTH_LONG).show();
-                    }
-                    else {
+                    if (IsNetworkAvailable(Entry.this)) {
                         VerifyPhoneNumber(phoneNumber.getText().toString());
                     }
                 }
@@ -74,15 +61,6 @@ public class Entry extends Activity {
                     return false;
                 }
             });
-        }
-    }
-
-    private boolean IsNumber(String value) {
-        try {
-            int num = Integer.parseInt(value);
-            return true;
-        } catch (Exception e) {
-            return false;
         }
     }
 
@@ -106,11 +84,7 @@ public class Entry extends Activity {
     }
 
     public void getOTP(final String phoneNo) {
-        final ProgressDialog p = new ProgressDialog(Entry.this);
-        p.setMessage("Please wait...");
-        p.setIndeterminate(false);
-        p.setCancelable(false);
-        p.show();
+        final ProgressDialog p = Utils.GetProcessDialog(this);
         ApiInterface apiService =
                 WebRequesthandler.getClient().create(ApiInterface.class);
 

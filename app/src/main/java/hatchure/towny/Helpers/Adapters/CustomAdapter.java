@@ -59,8 +59,8 @@ public class CustomAdapter extends RecyclerView.Adapter {
         ImageView image;
         public MyViewHolder(View itemView) {
             super(itemView);
-            name = itemView.findViewById(R.id.name);
-            image = itemView.findViewById(R.id.image);
+            name = itemView.findViewById(R.id.offer_title);
+            image = itemView.findViewById(R.id.offer_image);
         }
     }
 }

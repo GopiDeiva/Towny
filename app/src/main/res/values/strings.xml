@@ -2,4 +2,5 @@
     <string name="app_name">Towny</string>
     <string name="go">&#x003E;</string>
     <string name="PhoneNumber">phone</string>
+    <string name="title_activity_filters">FiltersActivity</string>
 </resources>

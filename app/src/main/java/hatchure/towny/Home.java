@@ -3,17 +3,13 @@ package hatchure.towny;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
-import android.location.LocationManager;
 import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -21,26 +17,21 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import hatchure.towny.Helpers.Adapters.CustomAdapter;
 import hatchure.towny.Helpers.Utils;
 import hatchure.towny.Interfaces.ApiInterface;
-import hatchure.towny.Models.OTPResponse;
-import hatchure.towny.Models.Offer;
 import hatchure.towny.Models.Offers;
 import hatchure.towny.WebHandler.WebRequesthandler;
 import retrofit2.Call;
 import retrofit2.Callback;
-import retrofit2.Response;
 
+import static hatchure.towny.Helpers.Utils.GetLastKnownLocation;
+import static hatchure.towny.Helpers.Utils.GetProcessDialog;
 import static hatchure.towny.Helpers.Utils.IsNetworkAvailable;
-import static hatchure.towny.Helpers.Utils.MyPREFERENCES;
 
 public class Home extends AppCompatActivity implements LocationListener {
 
@@ -53,10 +44,15 @@ public class Home extends AppCompatActivity implements LocationListener {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION}, 101);
+        }
+
         recyclerView = findViewById(R.id.recyclerView);
-        location = getLastKnownLocation();
+        location = GetLastKnownLocation(Home.this);
         if (CheckPermissions()) {
-            getOffers(String.valueOf(location.getLatitude()),String.valueOf(location.getLongitude()), radius);
+            //GetOffers(String.valueOf(location.getLatitude()),String.valueOf(location.getLongitude()), radius);
             ShowLayout();
         }
     }
@@ -64,49 +60,23 @@ public class Home extends AppCompatActivity implements LocationListener {
     @Override
     protected void onResume() {
         super.onResume();
-        location = getLastKnownLocation();
-        getOffers(String.valueOf(location.getLatitude()),String.valueOf(location.getLongitude()), radius);
-        customAdapter.notifyDataSetChanged();
+        location = GetLastKnownLocation(Home.this);
+        //        GetOffers(String.valueOf(location.getLatitude()),String.valueOf(location.getLongitude()), radius);
+//        customAdapter.notifyDataSetChanged();
     }
 
     @Override
     protected void onRestart() {
         super.onRestart();
-        location = getLastKnownLocation();
-        getOffers(String.valueOf(location.getLatitude()),String.valueOf(location.getLongitude()), radius);
-        customAdapter.notifyDataSetChanged();
-    }
-
-    private Location getLastKnownLocation() {
-        LocationManager mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        List<String> providers = mLocationManager.getProviders(true);
-        Location bestLocation = null;
-        for (String provider : providers) {
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION}, 101);
-            }
-            Location l = mLocationManager.getLastKnownLocation(provider);
-
-            if (l == null) {
-                continue;
-            }
-            if (bestLocation == null
-                    || l.getAccuracy() < bestLocation.getAccuracy()) {
-                bestLocation = l;
-            }
-        }
-        if (bestLocation == null) {
-            return null;
-        }
-        return bestLocation;
+        location = GetLastKnownLocation(Home.this);
+//        GetOffers(String.valueOf(location.getLatitude()),String.valueOf(location.getLongitude()), radius);
+//        customAdapter.notifyDataSetChanged();
     }
 
     private boolean CheckPermissions()
     {
-        if (!IsNetworkAvailable(this)) {
-            Toast.makeText(getApplicationContext(), "Something went wrong. Please check your internet connection.", Toast.LENGTH_LONG).show();
-        }
-        else {
+        if (IsNetworkAvailable(this))
+        {
             if (location == null) {
                 Toast.makeText(getApplicationContext(), "Something went wrong. Please check your location and internet", Toast.LENGTH_LONG).show();
                 AlertDialog.Builder builder =  new AlertDialog.Builder(this);
@@ -126,7 +96,7 @@ public class Home extends AppCompatActivity implements LocationListener {
                                     }
                                 });
                 builder.create().show();
-                location = getLastKnownLocation();
+                location = GetLastKnownLocation(Home.this);
             } else {
                 Toast.makeText(getApplicationContext(), location.getLatitude() + location.getLongitude() + "", Toast.LENGTH_LONG).show();
                 return true;
@@ -135,11 +105,8 @@ public class Home extends AppCompatActivity implements LocationListener {
         return false;
     }
 
-    public void getOffers(String latitude, String longitude, String radius) {
-        final ProgressDialog p = new ProgressDialog(Home.this);
-        p.setMessage("Please wait...");
-        p.setIndeterminate(false);
-        p.setCancelable(false);
+    private void GetOffers(String latitude, String longitude, String radius) {
+        final ProgressDialog p =GetProcessDialog(Home.this);
         p.show();
         ApiInterface apiService =
                 WebRequesthandler.getClient().create(ApiInterface.class);
@@ -167,21 +134,56 @@ public class Home extends AppCompatActivity implements LocationListener {
 
     private void ShowLayout()
     {
-        TextView logOut = findViewById(R.id.logout);
+        final TextView logOut = findViewById(R.id.logout);
+        final TextView filter = findViewById(R.id.filter);
+        final TextView search = findViewById(R.id.search);
+        final TextView appTitle = findViewById(R.id.app_title);
+        final EditText searchBar = findViewById(R.id.searchBar);
+        final TextView cancelSearch = findViewById(R.id.cancel);
+
+        StaggeredGridLayoutManager staggeredGridLayoutManager = new StaggeredGridLayoutManager(2, LinearLayoutManager.VERTICAL);
+        recyclerView.setLayoutManager(staggeredGridLayoutManager);
+        //GetOffers(String.valueOf(location.getLatitude()),String.valueOf(location.getLongitude()), radius);
         logOut.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                SharedPreferences sharedpreferences = getSharedPreferences(MyPREFERENCES, Context.MODE_PRIVATE);
-                SharedPreferences.Editor editor = sharedpreferences.edit();
-                editor.putString(Utils.PhoneNumber, "");
-                editor.commit();
-                Toast.makeText(getApplicationContext(), sharedpreferences.getString(Utils.PhoneNumber, ""), Toast.LENGTH_LONG).show();
-                finish();
+                Utils.ResetAppPreferences(Home.this);
+                Intent intent = new Intent(Home.this, Entry.class);
+                startActivity(intent);
             }
         });
-        StaggeredGridLayoutManager staggeredGridLayoutManager = new StaggeredGridLayoutManager(2, LinearLayoutManager.VERTICAL);
-        recyclerView.setLayoutManager(staggeredGridLayoutManager);
-        getOffers(String.valueOf(location.getLatitude()),String.valueOf(location.getLongitude()), radius);
+
+        search.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                appTitle.setVisibility(View.GONE);
+                search.setVisibility(View.GONE);
+                filter.setVisibility(View.GONE);
+                logOut.setVisibility(View.GONE);
+                searchBar.setVisibility(View.VISIBLE);
+                cancelSearch.setVisibility(View.VISIBLE);
+            }
+        });
+
+        cancelSearch.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                appTitle.setVisibility(View.VISIBLE);
+                search.setVisibility(View.VISIBLE);
+                filter.setVisibility(View.VISIBLE);
+                logOut.setVisibility(View.VISIBLE);
+                searchBar.setVisibility(View.GONE);
+                cancelSearch.setVisibility(View.GONE);
+            }
+        });
+
+        filter.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent filterIntent = new Intent(getApplicationContext(), FiltersActivity.class);
+                startActivity(filterIntent);
+            }
+        });
     }
 
     @Override
