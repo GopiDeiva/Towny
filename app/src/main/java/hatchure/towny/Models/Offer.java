@@ -4,9 +4,6 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 public class Offer {
-    @SerializedName("shops_count")
-    @Expose
-    private String shopsCount;
     @SerializedName("offer_id")
     @Expose
     private String offerId;
@@ -22,17 +19,21 @@ public class Offer {
     @SerializedName("offer_extended_description")
     @Expose
     private String offerExtendedDescription;
+    @SerializedName("offer_basepath")
+    @Expose
+    private String offerBasepath;
+    @SerializedName("offer_expires")
+    @Expose
+    private String offerExpires;
+    @SerializedName("shop_name")
+    @Expose
+    private String shopName;
+    @SerializedName("shop_rating")
+    @Expose
+    private String shopRating;
     @SerializedName("distance")
     @Expose
     private String distance;
-
-    public String getShopsCount() {
-        return shopsCount;
-    }
-
-    public void setShopsCount(String shopsCount) {
-        this.shopsCount = shopsCount;
-    }
 
     public String getOfferId() {
         return offerId;
@@ -74,6 +75,38 @@ public class Offer {
         this.offerExtendedDescription = offerExtendedDescription;
     }
 
+    public String getOfferBasepath() {
+        return offerBasepath;
+    }
+
+    public void setOfferBasepath(String offerBasepath) {
+        this.offerBasepath = offerBasepath;
+    }
+
+    public String getOfferExpires() {
+        return offerExpires;
+    }
+
+    public void setOfferExpires(String offerExpires) {
+        this.offerExpires = offerExpires;
+    }
+
+    public String getShopName() {
+        return shopName;
+    }
+
+    public void setShopName(String shopName) {
+        this.shopName = shopName;
+    }
+
+    public String getShopRating() {
+        return shopRating;
+    }
+
+    public void setShopRating(String shopRating) {
+        this.shopRating = shopRating;
+    }
+
     public String getDistance() {
         return distance;
     }
@@ -81,5 +114,4 @@ public class Offer {
     public void setDistance(String distance) {
         this.distance = distance;
     }
-
 }

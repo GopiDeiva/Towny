@@ -11,7 +11,7 @@ public class Offers {
     private Boolean error;
     @SerializedName("offers")
     @Expose
-    private List<Offer> offers;
+    private List<Offer> offers = null;
 
     public Boolean getError() {
         return error;

@@ -61,6 +61,8 @@ public class Home extends AppCompatActivity implements LocationListener {
     protected void onResume() {
         super.onResume();
         location = GetLastKnownLocation(Home.this);
+        if(location!=null)
+            GetOffers();
         //        GetOffers(String.valueOf(location.getLatitude()),String.valueOf(location.getLongitude()), radius);
 //        customAdapter.notifyDataSetChanged();
     }
@@ -118,9 +120,9 @@ public class Home extends AppCompatActivity implements LocationListener {
             public void onResponse(Call<Offers> call, retrofit2.Response<Offers> response) {
                 Log.d("ProductResult", response.body().toString());
                 p.dismiss();
+                offers = response.body();
                 customAdapter = new CustomAdapter(getApplicationContext(), offers.getOffers());
                 recyclerView.setAdapter(customAdapter); // set the Adapter to RecyclerView
-                offers = response.body();
                 Toast.makeText(getApplicationContext(),response.body().toString(), Toast.LENGTH_LONG).show();
             }
 
@@ -143,7 +145,7 @@ public class Home extends AppCompatActivity implements LocationListener {
 
         StaggeredGridLayoutManager staggeredGridLayoutManager = new StaggeredGridLayoutManager(2, LinearLayoutManager.VERTICAL);
         recyclerView.setLayoutManager(staggeredGridLayoutManager);
-        //GetOffers(String.valueOf(location.getLatitude()),String.valueOf(location.getLongitude()), radius);
+        GetOffers(String.valueOf(location.getLatitude()),String.valueOf(location.getLongitude()), radius);
         logOut.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
