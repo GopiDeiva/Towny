@@ -1,6 +1,7 @@
 package hatchure.towny.Interfaces;
 
 import hatchure.towny.Models.OTPResponse;
+import hatchure.towny.Models.OfferSortList;
 import hatchure.towny.Models.Offers;
 import retrofit2.Call;
 import retrofit2.http.GET;
@@ -12,4 +13,7 @@ public interface ApiInterface {
 
     @GET("Retrive/getoffers")
     Call<Offers> GetOffers(@Query("lat") String latitude, @Query("long") String longitude, @Query("rad") String radius);
+
+    @GET("Retrive/getOffersFilter")
+    Call<OfferSortList> GetOfferSortList();
 }

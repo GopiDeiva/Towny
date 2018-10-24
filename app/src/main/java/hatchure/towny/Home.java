@@ -3,11 +3,13 @@ package hatchure.towny;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
+import android.location.LocationManager;
 import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -21,38 +23,45 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.List;
+
 import hatchure.towny.Helpers.Adapters.CustomAdapter;
 import hatchure.towny.Helpers.Utils;
 import hatchure.towny.Interfaces.ApiInterface;
+import hatchure.towny.Models.Offer;
+import hatchure.towny.Models.OfferSortList;
 import hatchure.towny.Models.Offers;
 import hatchure.towny.WebHandler.WebRequesthandler;
 import retrofit2.Call;
 import retrofit2.Callback;
 
 import static hatchure.towny.Helpers.Utils.GetLastKnownLocation;
+import static hatchure.towny.Helpers.Utils.GetLocationManager;
+import static hatchure.towny.Helpers.Utils.GetLocationProvider;
 import static hatchure.towny.Helpers.Utils.GetProcessDialog;
 import static hatchure.towny.Helpers.Utils.IsNetworkAvailable;
+import static hatchure.towny.Helpers.Utils.RequestLocationUpdates;
 
 public class Home extends AppCompatActivity implements LocationListener {
 
-    Offers offers = null;
+    List<Offer> offersList;
     Location location = null;
     String radius = "20";
     RecyclerView recyclerView;
     CustomAdapter customAdapter;
+    LocationManager mLocationManager = null;
+    String locationProvider;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION}, 101);
-        }
-
+        mLocationManager = GetLocationManager(this);
+        locationProvider = GetLocationProvider(mLocationManager);
+        location = GetLastKnownLocation(this, mLocationManager, locationProvider);
         recyclerView = findViewById(R.id.recyclerView);
-        location = GetLastKnownLocation(Home.this);
+
         if (CheckPermissions()) {
-            //GetOffers(String.valueOf(location.getLatitude()),String.valueOf(location.getLongitude()), radius);
             ShowLayout();
         }
     }
@@ -60,19 +69,14 @@ public class Home extends AppCompatActivity implements LocationListener {
     @Override
     protected void onResume() {
         super.onResume();
-        location = GetLastKnownLocation(Home.this);
-        if(location!=null)
-            GetOffers();
-        //        GetOffers(String.valueOf(location.getLatitude()),String.valueOf(location.getLongitude()), radius);
-//        customAdapter.notifyDataSetChanged();
+        RequestLocationUpdates(this, this, mLocationManager, locationProvider );
+        location = GetLastKnownLocation(Home.this, mLocationManager, locationProvider);
     }
 
     @Override
-    protected void onRestart() {
-        super.onRestart();
-        location = GetLastKnownLocation(Home.this);
-//        GetOffers(String.valueOf(location.getLatitude()),String.valueOf(location.getLongitude()), radius);
-//        customAdapter.notifyDataSetChanged();
+    protected void onPause() {
+        super.onPause();
+        mLocationManager.removeUpdates(this);
     }
 
     private boolean CheckPermissions()
@@ -98,7 +102,8 @@ public class Home extends AppCompatActivity implements LocationListener {
                                     }
                                 });
                 builder.create().show();
-                location = GetLastKnownLocation(Home.this);
+                RequestLocationUpdates(this, this, mLocationManager, locationProvider );
+                location = GetLastKnownLocation(Home.this, mLocationManager, locationProvider);
             } else {
                 Toast.makeText(getApplicationContext(), location.getLatitude() + location.getLongitude() + "", Toast.LENGTH_LONG).show();
                 return true;
@@ -118,18 +123,19 @@ public class Home extends AppCompatActivity implements LocationListener {
         call.enqueue(new Callback<Offers>() {
             @Override
             public void onResponse(Call<Offers> call, retrofit2.Response<Offers> response) {
-                Log.d("ProductResult", response.body().toString());
                 p.dismiss();
-                offers = response.body();
-                customAdapter = new CustomAdapter(getApplicationContext(), offers.getOffers());
-                recyclerView.setAdapter(customAdapter); // set the Adapter to RecyclerView
-                Toast.makeText(getApplicationContext(),response.body().toString(), Toast.LENGTH_LONG).show();
+                offersList = response.body().getOffers();
+                customAdapter = new CustomAdapter(getApplicationContext(), offersList);
+                recyclerView.setAdapter(customAdapter);
+                Log.d("towny","web request success = "+ offersList.size());
+                Toast.makeText(getApplicationContext(),offersList.size()+"", Toast.LENGTH_LONG).show();
             }
 
             @Override
             public void onFailure(Call<Offers> call, Throwable t) {
                 p.dismiss();
-                Toast.makeText(getApplicationContext(),"failiure", Toast.LENGTH_SHORT).show();
+                Log.i("towny", "web request failed");
+                Toast.makeText(getApplicationContext(),"failure", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -146,6 +152,9 @@ public class Home extends AppCompatActivity implements LocationListener {
         StaggeredGridLayoutManager staggeredGridLayoutManager = new StaggeredGridLayoutManager(2, LinearLayoutManager.VERTICAL);
         recyclerView.setLayoutManager(staggeredGridLayoutManager);
         GetOffers(String.valueOf(location.getLatitude()),String.valueOf(location.getLongitude()), radius);
+        customAdapter = new CustomAdapter(getApplicationContext(), offersList);
+        recyclerView.setAdapter(customAdapter);
+
         logOut.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
